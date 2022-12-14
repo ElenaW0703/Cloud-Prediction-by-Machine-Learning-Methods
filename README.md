@@ -4,15 +4,15 @@
 
 ### To Reproduce purposes:
 
-First read the three images and change the data name as the corresponding feature name. \ 
-Draw point based on x and y coordinate in each of the image and color it by labels using ggplot. \
-Merge the three images by row to create an entire data, so that we can calcualte percentages of labels. \
+First read the three images and change the data name as the corresponding feature name. 
+Draw point based on x and y coordinate in each of the image and color it by labels using ggplot. 
+Merge the three images by row to create an entire data, so that we can calcualte percentages of labels. 
 
 Separate data into train and pred based on the label of the plot. Label != zero --> train, label == zero --> pred \
-Repeat these for image 1, 2, 3 and all. \
-Then, draw the density plot for each feature in three image sets. \
-Use ggplot to draw the pairwise plot for the selected feature CORR, NDAI, and SD, and color the points based on label. \
-Now we split the data into blocks based on which method to use. \
+Repeat these for image 1, 2, 3 and all.
+Then, draw the density plot for each feature in three image sets. 
+Use ggplot to draw the pairwise plot for the selected feature CORR, NDAI, and SD, and color the points based on label. 
+Now we split the data into blocks based on which method to use. 
 1. split based on x, and y quanitles --> 16 folds per image
 2. split based on x and y median  --> 4 folds per image 
 
