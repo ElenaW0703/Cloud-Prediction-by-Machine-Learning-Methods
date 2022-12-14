@@ -70,7 +70,7 @@ plot the density of features labeled based on whether that point is correctly cl
 
 It is also to encourage to draw a new map and labeled similarly to check any regional pattern. 
 
-########################################################################################################## \
+########################################################################################################## 
 
 repeat the procedure inside #############, for different splitting approaches. 
 I do recommend to plot in a separate rmd file as *CVmaster* takes time to run. 
