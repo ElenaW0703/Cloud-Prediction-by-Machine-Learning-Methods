@@ -12,7 +12,7 @@ Now we split the data into blocks based on which method to use.
 1. split based on x, and y quanitles --> 16 folds per image
 2. split based on x and y median  --> 4 folds per image 
 
-####################################################
+#######################################################################################################################################################################
 Then we set the size of training, testing and validation size and use sample to draw those block indexes 
 Use the block indexes to set up the training, testing and validation set. 
 
@@ -58,7 +58,7 @@ Notice: The prediction should be back to class rather than probability.
 
 Model Reliance: 
 shuffle the each feature at a time in the testing set, and estimate the loss in the testing accuracy. 
-# Notice: Use copy to copy the testing set to avoid any destructive modification. Save the loss in a matrix, 
+### Notice: Use copy to copy the testing set to avoid any destructive modification. Save the loss in a matrix, 
 and plot the loss based on each variable name. 
 
 Algorithm Reliance: 
@@ -70,8 +70,10 @@ plot the density of features labeled based on whether that point is correctly cl
 
 It is also to encourage to draw a new map and labeled similarly to check any regional pattern. 
 
-######################################################################################
+#######################################################################################################################################################################
 
 repeat the procedure inside #############, for different splitting approaches. 
-I do recommend to plot in a separate rmd file as CVmaster takes time to run. 
-The project2.plot contains all the code to generate every single plot with caption 
+I do recommend to plot in a separate rmd file as *CVmaster* takes time to run. 
+### *CloudData_Plots.Rmd* contains all the code to generate every single plot with caption 
+### *CloudData_FinalCode.Rmd* contains all the code for this project
+### *CloudDataPredictionProject_ElenaW.pdf* is the report for this project
