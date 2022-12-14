@@ -1,0 +1,903 @@
+---
+title: "CloudData_Plots"
+author: "Elena W."
+date: "11/17/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r}
+library(tidyverse)
+library(pander)
+library(ggplot2)
+require(gridExtra)
+library(GGally)
+library(e1071)
+library(tree)
+require(MASS)
+library(class)
+library(randomForest)
+library(pROC)
+library(data.table)
+```
+
+
+```{r}
+my_theme <- theme_bw()+
+  theme(plot.title = element_text(hjust=0.5),
+        axis.text.x = element_text( angle = 45, 
+                                   vjust = 0.5),
+        axis.text.y = element_text(angle=45),
+        plot.subtitle   = element_text(color="red")
+)
+```
+
+
+```{r}
+image1 = read.table("imagem1.txt")
+image2 = read.table("imagem2.txt")
+image3 = read.table("imagem3.txt")
+```
+
+```{r}
+names = c("y_cord", "x_cord","label", "NDAI","SD","CORR","DF",
+          "CF","BF","AF","AN")
+colnames(image1) = names
+colnames(image2) = names
+colnames(image3) = names
+```
+
+```{r}
+image1$explab = as.factor(image1$label)
+
+plot1 = ggplot(image1, aes(x = x_cord, y = y_cord, 
+                   color = explab))+
+  geom_point()+
+  labs(x = "",
+       y = "Y coordinate",
+       title = "Image 1")+
+  my_theme+
+  theme(legend.position = "None")
+
+
+```
+
+```{r}
+image2$explab = as.factor(image2$label)
+
+plot2 = ggplot(image2, aes(x = x_cord, y = y_cord, 
+                   color = explab))+
+  geom_point()+
+  labs(
+       y = "Y coordinate",
+       title = "Image 2",
+       x = "X coordinate")+
+  my_theme+
+  theme(legend.position = "None",
+        axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank())
+
+
+
+```
+
+```{r}
+image3$explab = as.factor(image3$label)
+
+plot3 = ggplot(image3, aes(x = x_cord, y = y_cord, 
+                   color = explab))+
+  geom_point()+
+  labs(x = 'coral = clear, blue = cloudy, green = unknown',
+       y = "Y coordinate",
+       title = "Image 3")+
+  my_theme+
+  scale_color_discrete(
+                     labels = c("clear",
+                                "unknown",
+                                "cloudy"))+
+  theme(axis.ticks.y = element_blank(),
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        legend.position = "None")
+```
+
+```{r, fig.width= 10, fig.height= 5,fig.cap= "Images Based on Labels"}
+grid.arrange(plot1,plot2,plot3, ncol = 3)
+```
+
+```{r}
+image_all = rbind(image1, image2, image3)
+
+table(image_all$label)/nrow(image_all)
+
+```
+
+
+
+```{r}
+# Separate dataset into subsets used to train models and subsets to prediction
+image1_train = subset(image1, label != 0)
+image1_pred = subset(image1, label == 0 )
+image2_train = subset(image2, label != 0)
+image2_pred = subset(image2, label == 0 )
+image3_train = subset(image3, label != 0)
+image3_pred = subset(image3, label == 0 )
+imageA_train = subset(image_all, label != 0)
+imageA_pred = subset(image_all, label == 0)
+```
+e
+```{r, fig.width=10, fig.height=3}
+# NDAI density over 3 images 
+
+NDAI_1 = ggplot(image1_train, aes(x = NDAI))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+NDAI_2 = ggplot(image2_train, aes(x = NDAI))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+NDAI_3 = ggplot(image3_train, aes(x = NDAI))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(NDAI_1, NDAI_2, NDAI_3, ncol = 3)
+```
+
+
+```{r, fig.width= 12, fig.height= 3}
+# SD density plot 
+
+SD_1 = ggplot(image1_train, aes(x = SD))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+SD_2 = ggplot(image2_train, aes(x = SD))+
+  geom_density(aes(fill = explab), alpha =0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+SD_3 = ggplot(image3_train, aes(x = SD))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(SD_1, SD_2, SD_3, ncol = 3)
+```
+
+```{r, fig.height=3, fig.width= 10}
+# CORR density plot 
+
+CORR_1 = ggplot(image1_train, aes(x = CORR))+
+  geom_density(aes(fill = explab), alpha =0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+CORR_2 = ggplot(image2_train, aes(x = CORR))+
+  geom_density(aes(fill = explab), alpha =0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+CORR_3 = ggplot(image3_train, aes(x = CORR))+
+  geom_density(aes(fill = explab), alpha =0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(CORR_1, CORR_2, CORR_3, ncol = 3)
+```
+
+
+```{r, fig.height=3, fig.width= 10}
+# Density for DF
+DF_1 = ggplot(image1_train, aes(x = DF))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+DF_2 = ggplot(image2_train, aes(x = DF))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 2")+
+  my_theme
+DF_3 = ggplot(image3_train, aes(x = DF))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(DF_1, DF_2, DF_3, ncol = 3)
+```
+
+
+```{r, fig.width=10, fig.height= 3}
+BF_1 = ggplot(image1_train, aes(x = BF))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+BF_2 = ggplot(image2_train, aes(x = BF))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+BF_3 = ggplot(image3_train, aes(x = BF))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(BF_1, BF_2, BF_3, ncol = 3)
+```
+
+```{r, fig.width=10, fig.height= 3}
+CF_1 = ggplot(image1_train, aes(x = CF))+
+  geom_density(aes(fill = explab),alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+CF_2 = ggplot(image2_train, aes(x = CF))+
+  geom_density(aes(fill = explab),alpha = 0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+CF_3 = ggplot(image3_train, aes(x = CF))+
+  geom_density(aes(fill = explab),alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(CF_1, CF_2, CF_3, ncol = 3)
+```
+
+
+```{r, fig.width=10, fig.height= 3}
+AF_1 = ggplot(image1_train, aes(x = AF))+
+  geom_density(aes(fill = explab),alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+AF_2 = ggplot(image2_train, aes(x = AF))+
+  geom_density(aes(fill = explab),alpha = 0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+AF_3 = ggplot(image3_train, aes(x = AF))+
+  geom_density(aes(fill = explab),alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(AF_1, AF_2, AF_3, ncol = 3)
+```
+
+```{r, fig.width=10, fig.height= 3}
+AN_1 = ggplot(image1_train, aes(x = AN))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 1")+
+  my_theme
+
+AN_2 = ggplot(image2_train, aes(x = AN))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 2")+
+  my_theme
+
+AN_3= ggplot(image3_train, aes(x = AN))+
+  geom_density(aes(fill = explab), alpha = 0.5)+
+  labs(title = "Image 3")+
+  my_theme
+
+grid.arrange(AN_1, AN_2, AN_3, ncol = 3)
+```
+
+
+```{r, fig.height=24, fig.width= 10, fig.cap="Density Plots for Features"}
+
+grid.arrange(NDAI_1, NDAI_2, NDAI_3, SD_1, SD_2, SD_3,
+             CORR_1, CORR_2, CORR_3, DF_1,DF_2, DF_3,
+             CF_1, CF_2, CF_3, BF_1, BF_2, BF_3,
+             AF_1,AF_2,AF_3, AN_1, AN_2, AN_3,
+             nrow = 8, ncol = 3)
+
+```
+
+```{r, fig.width= 10 , fig.height=3, fig.cap= "Pairwise Comparison"}
+cor_nda = ggplot(imageA_train, aes(x = CORR, y = NDAI))+
+  geom_point(aes(col = explab))+
+  labs(title = "CORR vs. NDAI",
+       x= "CORR",
+       y = "NDAI")+
+  my_theme
+
+SD_nda = ggplot(imageA_train, aes(x = NDAI, y = SD))+
+  geom_point(aes(col = explab))+
+  labs(title = "NDAI vs. SD",
+       x= "NDAI",
+       y = "SD")+
+  my_theme
+
+COR_SD = ggplot(imageA_train, aes(x = SD, y = CORR))+
+  geom_point(aes(col = explab))+
+  labs(title = "CORR vs. SD",
+       x= "SD",
+       y = "CORR")+
+  my_theme
+
+grid.arrange(cor_nda, SD_nda, COR_SD, ncol = 3)
+```
+
+```{r}
+# this function return a list of subsets for the data based on the division rule 
+blocksep = function(dataset){
+  sepx = quantile(dataset$x_cord)
+  sepx[5] = sepx[5]+1
+  sepy = quantile(dataset$y_cord)
+  sepy[5] = sepy[5]+1
+  blocks = list()
+  index = 1
+  for (i in 1:4){
+    for (j in 1:4){
+    sepx1 = sepx[i]
+    sepx2 = sepx[i+1]
+    sepy1 = sepy[j]
+    sepy2 = sepy[j+1]
+    block = subset(dataset,(sepx1 <= dataset$x_cord & dataset$x_cord < sepx2 &
+                     sepy1<= dataset$y_cord & dataset$y_cord < sepy2))
+    block = block[,-c(1,2,12)]
+    blocks[[index]] = block
+    index = index +1 
+  }}
+  return(blocks)
+  
+}
+
+```
+
+```{r}
+feature_l = function(lst){
+  n = length(lst)
+  feature = NULL
+  features = lst
+  label = list()
+  for (i in 1:n ){
+    features[[i]] = features[[i]][,-1]
+    label[[i]] = lst[[i]][,1]
+    
+  }
+  return(list(x = features, y = label))
+}
+
+```
+
+## 16 folds 
+
+```{r}
+qda_loss = c(0.29461460, 0.03053583, 0.05581051, 0.05660377, 0.01325163)
+lda_loss = c(0.29943897, 0.04609448, 0.06597582, 0.08930818, 0.03458713)
+naivebayes_loss = c(0.33550176, 0.17458108, 0.05433013, 0.07924528, 0.02916098)
+tree_loss = c(0.28522779, 0.03730199, 0.06711078, 0.15735849, 0.01063084)
+logistic_loss = c(0.31166365, 0.05298398, 0.06888724, 0.08968553, 0.03562069)
+```
+
+```{r}
+plot_test1 = ggplot()+
+  geom_line(aes(x = 1:5, y = qda_loss, col = "qda"))+
+  geom_line(aes(x = 1:5, y = lda_loss, col = "lda"))+
+  geom_line(aes(x = 1:5, y = naivebayes_loss, col = "naive bayes"))+
+  geom_line(aes(x = 1:5, y = tree_loss, col = "tree"))+
+  geom_line(aes(x = 1:5, y = logistic_loss, col = "logistic"))+
+  labs(x = "",
+       y = "CV loss",
+       title = "48 blocks"
+       )+
+  my_theme
+
+```
+
+```{r}
+qda_tr_loss = c(0.106061482, 0.011020862, 0.083970954, 0.008840354, 0.029525718)
+lda_tr_loss = c(0.118629377, 0.003673621, 0.101686242, 0.001791183, 0.033132933)
+naivebayes_tr_loss = c(0.150785855, 0.002561424, 0.067303475, 0.003293465, 0.074348697)
+tree_tr_loss = c(0.086704033, 0.005695797, 0.083751645, 0.001560062, 0.054241817)
+logistic_tr_loss = c(0.109644054, 0.003875838, 0.091646766, 0.001560062, 0.031462926)
+
+```
+
+```{r}
+plot_t2 = ggplot()+
+  geom_line(aes(x = 1:5, y = qda_tr_loss, col = "qda"))+
+  geom_line(aes(x = 1:5, y = lda_tr_loss, col = "lda"))+
+  geom_line(aes(x = 1:5, y = naivebayes_tr_loss, col = "naive bayes"))+
+  geom_line(aes(x = 1:5, y = tree_tr_loss, col = "tree"))+
+  geom_line(aes(x = 1:5, y = logistic_tr_loss, col = "logistic"))+
+  labs(x = " fold",
+       y = "CV loss",
+       title = "12 blocks"
+       )+
+  my_theme
+
+```
+
+```{r,fig.cap="CV loss for different methods of splitting"}
+grid.arrange(plot_test1, plot_t2)
+
+```
+
+```{r}
+source("CVmaster.R")
+```
+
+## 48 fold and 12 fold training splits
+
+```{r}
+# separate data points into 16 blocks for each image
+blocks_1 = blocksep(image1_train)
+blocks_2 = blocksep(image2_train)
+blocks_3 = blocksep(image3_train)
+# put the block data together 
+total = c(blocks_1, blocks_2, blocks_3)
+```
+
+```{r}
+set.seed(0)
+block_num = 1:48
+trainsize = round(48*0.8)
+# Sample the block index into single training, validation, and testing set
+train_index = sample(block_num, size = trainsize)
+rest= block_num[-train_index]
+validation_index = sample(rest, size = 5)
+test_index = block_num[c(-validation_index, -train_index)]
+
+```
+
+```{r}
+training = NULL
+# get the single training set 
+for (index in train_index){
+  block_chosen = total[[index]]
+  training = rbind(training, block_chosen)
+}
+
+# get the single testing set 
+testing = NULL
+for (index in test_index){
+  block_test = total[[index]]
+  testing = rbind(testing, block_test)
+}
+
+# get the single validation set 
+validation = NULL
+for(index in validation_index){
+  block_valid = total[[index]]
+  validation = rbind(validation, block_valid)
+}
+```
+
+```{r}
+training_block = total[c(train_index, validation_index)]
+testing_block = total[-c(train_index, validation_index)]
+data = feature_l(training_block)
+feature_tr = data$x
+label_tr = data$y
+```
+
+## 4 folds
+
+```{r}
+# this function return a list of subsets for the data based on the division rule 
+blocksep2 = function(dataset){
+  sepx = c(min(dataset$x_cord), 
+          median(dataset$x_cord), 
+          max(dataset$x_cord)+1)
+  sepy = c(min(dataset$x_cord), 
+          median(dataset$x_cord), 
+          max(dataset$x_cord)+1)
+  blocks = list()
+  index = 1
+  for (i in 1:2){
+    for (j in 1:2){
+    sepx1 = sepx[i]
+    sepx2 = sepx[i+1]
+    sepy1 = sepy[j]
+    sepy2 = sepy[j+1]
+    block = subset(dataset,(sepx1 <= dataset$x_cord & dataset$x_cord < sepx2 &
+                     sepy1<= dataset$y_cord & dataset$y_cord < sepy2))
+    block = block[,-c(1,2,12)]
+    blocks[[index]] = block
+    index = index +1 
+  }}
+  return(blocks)
+  
+}
+
+```
+
+```{r}
+# separate data points into 4 blocks for each image
+blocks2_1 = blocksep2(image1_train)
+blocks2_2 = blocksep2(image2_train)
+blocks2_3 = blocksep2(image3_train)
+# put the block data together 
+total2 = c(blocks2_1, blocks2_2, blocks2_3)
+set.seed(0)
+block_num2 = 1:12
+trainsize2 = round(12*0.8)-1
+# Sample the block index into single training, validation, and testing set
+train_index2 = sample(block_num2, size = trainsize2)
+rest2= block_num2[-train_index2]
+validation_index2 = sample(rest2, size = 1)
+test_index2 = block_num2[-c(validation_index2,train_index2)]
+training_block2 = total2[c(train_index2, validation_index2)]
+testing_block2 = total2[-c(train_index2, validation_index2)]
+data2 = feature_l(training_block2)
+feature_2tr = data2$x
+label_2tr = data2$y
+
+```
+
+
+## fit model to the training data 48 blocks and rocs 
+
+```{r}
+train1 = rbind(training, validation)
+qda_all = qda(label~., data = train1)
+lda_all = lda(label~., data = train1)
+logit_all = glm(as.factor(label)~., data = train1, family = "binomial")
+naivebayes_all = naiveBayes(label~., data = train1)
+tree_all = tree(label~., data = train1)
+
+```
+
+```{r}
+qda.pred = predict(qda_all, testing[,-1])
+lda.pred = predict(lda_all, testing[,-1])
+logit.pred = predict(logit_all, testing[,-1], type = "response")
+naive.pred = predict(naivebayes_all, testing[,-1], type = "raw")
+tree.pred = predict(tree_all, testing[,-1])
+```
+
+```{r, fig.cap="ROC for qda"}
+
+par(pty = "s")
+qda_roc = roc(as.factor(testing$label),qda.pred$posterior[,2],
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "qda 48 blocks", col = "red",
+              print.thres=TRUE)
+
+coords(qda_roc, x="best", input="threshold", best.method="youden") 
+auc(qda_roc)
+```
+
+
+```{r, fig.cap= "ROC for lda"}
+
+par(pty = "s")
+lda_roc = roc(testing$label,lda.pred$posterior[,2],
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "48 blocks", col = "blue",
+              print.thres=TRUE)
+
+coords(lda_roc, x="best", input="threshold", best.method="youden") 
+auc(lda_roc)
+```
+
+```{r, fig.cap= "ROC for logistic regression"}
+par(pty = "s")
+logit_roc = roc(testing$label,logit.pred,
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "48 blocks", col = "green",
+              print.thres=TRUE)
+coords(logit_roc, x="best", input="threshold", best.method="youden") 
+auc(logit_roc)
+```
+
+```{r, fig.cap= "ROC for Decision Tree"}
+
+par(pty = "s")
+tree_roc = roc(testing$label,tree.pred,
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "48 blocks", col = "pink",
+              print.thres=TRUE)
+coords(tree_roc, x="best", input="threshold", best.method="youden") 
+auc(tree_roc)
+
+```
+
+
+```{r, fig.cap= "ROC for Naive Bayes"}
+
+par(pty = "s")
+naive_roc = roc(testing$label,naive.pred[,2],
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "48 blocks", col = "coral",
+              print.thres=TRUE)
+coords(naive_roc, x="best", input="threshold", best.method="youden") 
+
+auc(naive_roc)
+```
+
+## fit model to the training data 16 blocks and rocs 
+
+```{r}
+training2 = NULL
+# get the single training set 
+for (index in train_index2){
+  block_chosen = total2[[index]]
+  training2 = rbind(training2, block_chosen)
+}
+
+# get the single testing set 
+testing2 = NULL
+for (index in test_index2){
+  block_test = total2[[index]]
+  testing2 = rbind(testing2, block_test)
+}
+
+# get the single validation set 
+validation2 = NULL
+for(index in validation_index2){
+  block_valid = total2[[index]]
+  validation2 = rbind(validation2, block_valid)
+}
+```
+
+```{r}
+train2 = rbind(training2, validation2)
+qda_all2 = qda(as.factor(label)~., data = train2)
+lda_all2 = lda(as.factor(label)~., data = train2)
+logit_all2 = glm(as.factor(label)~., data = train2, family = "binomial")
+naivebayes_all2 = naiveBayes(as.factor(label)~., data = train2)
+tree_all2 = tree(label~., data = train2)
+
+```
+
+```{r}
+qda.pred2 = predict(qda_all2, testing2[,-1])
+lda.pred2 = predict(lda_all2, testing2[,-1])
+logit.pred2 = predict(logit_all2, testing2[,-1], type = "response")
+naive.pred2 = predict(naivebayes_all2, testing2[,-1], type = "raw")
+tree.pred2 = predict(tree_all2, testing2[,-1])
+```
+
+```{r, fig.cap="ROC for qda"}
+
+par(pty = "s")
+qda_roc2 = roc(as.factor(testing2$label),qda.pred2$posterior[,2],
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "12 blocks", col = "red",
+              print.thres=TRUE)
+
+coords(qda_roc2, x="best", input="threshold", best.method="youden") 
+auc(qda_roc2)
+```
+
+```{r, fig.cap= "ROC for lda"}
+
+par(pty = "s")
+lda_roc2 = roc(testing2$label,lda.pred2$posterior[,2],
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "12 blocks", col = "blue",
+              print.thres=TRUE)
+
+coords(lda_roc2, x="best", input="threshold", best.method="youden") 
+auc(lda_roc2)
+```
+
+
+```{r, fig.cap= "ROC for logistic regression"}
+par(pty = "s")
+logit_roc2 = roc(testing2$label,logit.pred2,
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "12 blocks", col = "green",
+              print.thres=TRUE)
+coords(logit_roc2, x="best", input="threshold", best.method="youden") 
+auc(logit_roc2)
+```
+
+
+```{r, fig.cap= "ROC for Decision Tree"}
+
+par(pty = "s")
+tree_roc2 = roc(testing2$label,tree.pred2,
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "12 blocks", col = "pink",
+              print.thres=TRUE)
+coords(tree_roc2, x="best", input="threshold", best.method="youden") 
+auc(tree_roc2)
+
+```
+
+```{r, fig.cap= "ROC for Naive Bayes"}
+
+par(pty = "s")
+naive_roc2 = roc(testing2$label,naive.pred2[,2],
+              plot=TRUE, 
+              legacy.axes = TRUE,
+              percent =TRUE, 
+              xlab="False Positive Percentage", 
+              ylab="True Positive Percentage",
+              main = "12 blocks", col = "coral",
+              print.thres=TRUE)
+coords(naive_roc2, x="best", input="threshold", best.method="youden") 
+
+auc(naive_roc2)
+```
+```{r}
+tree_all = tree(as.factor(label)~., data = train1)
+tree.pred = predict(tree_all, testing[,-1], type = "class")
+test_acc_tree = mean(tree.pred == testing$label)
+tree_all2 = tree(as.factor(label)~., data = train2)
+tree.pred2 = predict(tree_all2, testing2[,-1], type = "class")
+test_acc_tree2 = mean(tree.pred2 == testing2$label)
+
+```
+
+```{r}
+set.seed(1)
+change = matrix(0, nrow = 2, ncol = 8)
+for (i in 2:ncol(testing)){
+  testing1 = copy(testing)
+  testing_new2 = copy(testing2)
+  new_order = sample(1:nrow(testing1))
+  new_order2 = sample(1:nrow(testing2))
+  testing1[,i] = testing[new_order,i]
+  testing_new2[,i] = testing[new_order2,i]
+  new_pred = predict(tree_all,testing1[,-1], type = "class")
+  new_pred2 = predict(tree_all2, testing_new2[,-1], type = "class")
+  acc = mean(new_pred == testing1$label)
+  acc2 = mean(new_pred2 == testing_new2$label)
+  diff = acc - test_acc_tree
+  diff2 = acc2 - test_acc_tree2
+  change[1,i-1] = diff
+  change[2,i-1] = diff2
+}
+
+colnames(change) = c("NDAI","SD","CORR","DF",
+          "CF","BF","AF","AN")
+```
+
+```{r, fig.cap="Model Reliance"}
+ggplot()+
+  geom_col(aes(x = colnames(change), y = - change[1,], fill = "48 blocks"))+
+  geom_col(aes(x = colnames(change), y = - change[2,], fill = "12 blocks"), 
+           alpha = 0.7)+
+  labs(x = "Features",
+       y = "the magnitude of loss in accuracy",
+       title = "Estimation of loss in accuracy by shuffling single feature")+
+  my_theme
+
+
+```
+
+## model reliance 
+
+```{r}
+AR = matrix(0, nrow = 2, ncol = 8)
+
+library(data.table)
+set.seed(1)
+for (i in 2:ncol(testing)){
+  train_new = copy(train1)
+  train_new2 = copy(train2)
+  testing1 = copy(testing)
+  testing_new2 = copy(testing2)
+  # drop the i th feature
+  train_new[,i] = NULL
+  testing1[,i] = NULL
+  train_new2[,i] = NULL
+  testing_new2[,i] = NULL
+  model1 = tree(as.factor(label)~., data = train_new)
+  model2 = tree(as.factor(label)~., data = train_new2)
+  new_pred = predict(model1,testing1[,-1], type = "class")
+  new_pred2 = predict(model2, testing_new2[,-1], type = "class")
+  acc = mean(new_pred == testing1$label)
+  acc2 = mean(new_pred2 == testing_new2$label)
+  diff = acc - test_acc_tree
+  diff2 = acc2 - test_acc_tree2
+  AR[1,i-1] = diff
+  AR[2,i-1] = diff2
+}
+
+colnames(AR) = c("NDAI","SD","CORR","DF",
+          "CF","BF","AF","AN")
+
+```
+
+```{r, fig.cap="Algorithm Reliance"}
+ggplot()+
+  geom_col(aes(x = colnames(AR), y = abs(AR[1,]), fill = "48 blocks"))+
+  geom_col(aes(x = colnames(AR), y = abs(AR[2,]), fill = "12 blocks"), 
+           alpha = 0.7)+
+  labs(x = "Features",
+       y = "The magnitude of loss in accuracy",
+       title = "Estimation of loss in accuracy by Dropping single feature")+
+  my_theme
+
+```
+
+```{r}
+
+testing$MSE = (tree.pred == testing$label)
+
+```
+
+```{r}
+ACC1= ggplot(testing, aes(x = AN, fill= MSE))+
+  geom_density(alpha = 0.5)+
+  my_theme+
+  labs(title = "48 Blocks")
+
+ACC2= ggplot(testing, aes(x = CORR, fill= MSE))+
+  geom_density(alpha = 0.5)+
+  my_theme+
+  labs(title = "48 Blocks")
+
+ACC3= ggplot(testing, aes(x = NDAI, fill= MSE))+
+  geom_density(alpha = 0.5)+
+  my_theme+
+  labs(title = "48 Blocks")
+```
+
+```{r}
+testing2$MSE = (tree.pred2 == testing2$label)
+
+ACC12= ggplot(testing2, aes(x = AN, fill= MSE))+
+  geom_density(alpha = 0.5)+
+  my_theme+
+  labs(title = "12 Blocks")
+
+ACC22= ggplot(testing2, aes(x = CORR, fill= MSE))+
+  geom_density(alpha = 0.5)+
+  my_theme+
+  labs(title = "12 Blocks")
+
+ACC32= ggplot(testing2, aes(x = NDAI, fill= MSE))+
+  geom_density(alpha = 0.5)+
+  my_theme+
+  labs(title = "12 Blocks")
+
+```
+
+```{r,fig.cap="Misclassification distribution by features"}
+grid.arrange(ACC1,ACC12,ACC2, ACC22,ACC3, ACC32, ncol = 2)
+```
+
+
+
+
+
